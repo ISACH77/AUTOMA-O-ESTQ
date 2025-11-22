@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D WAREHOUSE PRO - Sistema de Gestão de Estoque</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            overflow: hidden;
+        }
+
+        #app {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* SIDEBAR - Inspirado no SketchUp mas melhorado */
+        #sidebar {
+            width: 300px;
+            background: linear-gradient(180deg, #2c3e50 0%, #34495e 100%);
+            color: white;
+            padding: 20px;
+            border-right: 3px solid #3498db;
+            box-shadow: 4px 0 20px rgba(0,0,0,0.3);
+            overflow-y: auto;
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .logo p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .section {
+            margin-bottom: 25px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+
+        .section h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tool-button {
+            width: 100%;
+            padding: 12px 15px;
+            margin: 5px 0;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 13px;
+            transition: all 0.3s ease;
+        }
+
+        .tool-button:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateX(5px);
+        }
+
+        .tool-button.active {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            box-shadow: 0 0 15px rgba(231, 76, 60, 0.5);
+        }
+
+        .property-group {
+            margin: 10px 0;
+        }
+
+        .property-label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 12px;
+            color: #bdc3c7;
+        }
+
+        .property-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #34495e;
+            border-radius: 6px;
+            background: #2c3e50;
+            color: white;
+            font-size: 12px;
+        }
+
+        .color-palette {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 10px;
+        }
+
+        .color-swatch {
+            width: 25px;
+            height: 25px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .color-swatch:hover {
+            transform: scale(1.2);
+            border-color: white;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .stat-card {
+            background: rgba(52, 152, 219, 0.2);
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: #3498db;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #bdc3c7;
+        }
+
+        /* MAIN VIEWPORT */
+        #viewport {
+            flex: 1;
+            position: relative;
+            background: linear-gradient(135deg, #87CEEB 0%, #98cbed 100%);
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* TOOLBAR SUPERIOR */
+        #top-toolbar {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(44, 62, 80, 0.95);
+            padding: 15px 25px;
+            border-radius: 15px;
+            display: flex;
+            gap: 15px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #3498db;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        .top-tool-button {
+            padding: 12px 20px;
+            background: linear-gradient(135deg, #3498db, #2980b9);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .top-tool-button:hover {
+            background: linear-gradient(135deg, #2980b9, #21618c);
+            transform: translateY(-2px);
+        }
+
+        /* INFO PANEL */
+        #info-panel {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            background: rgba(44, 62, 80, 0.95);
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+            min-width: 250px;
+            backdrop-filter: blur(10px);
+            border: 2px solid #3498db;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        #info-panel h3 {
+            color: #3498db;
+            margin-bottom: 15px;
+            font-size: 16px;
+            text-align: center;
+        }
+
+        .coordinate-display {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .coord {
+            text-align: center;
+            background: rgba(52, 152, 219, 0.2);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 11px;
+        }
+
+        .coord-value {
+            font-weight: bold;
+            color: #3498db;
+            font-size: 14px;
+        }
+
+        /* LOADING */
+        #loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            z-index: 1000;
+        }
+
+        .loader {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(52, 152, 219, 0.3);
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* MATERIAL PREVIEW */
+        .material-preview {
+            width: 100%;
+            height: 60px;
+            border-radius: 6px;
+            margin: 10px 0;
+            border: 2px solid #34495e;
+            background: 
+                linear-gradient(45deg, #666 25%, transparent 25%), 
+                linear-gradient(-45deg, #666 25%, transparent 25%), 
+                linear-gradient(45deg, transparent 75%, #666 75%), 
+                linear-gradient(-45deg, transparent 75%, #666 75%);
+            background-size: 20px 20px;
+            background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+        }
+
+        /* ENHANCED UI ELEMENTS */
+        .slider-container {
+            margin: 10px 0;
+        }
+
+        .slider {
+            width: 100%;
+            height: 6px;
+            background: #34495e;
+            border-radius: 3px;
+            outline: none;
+    
+        }
+
+        .slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 18px;
+            height: 18px;
+            background: #3498db;
+            border-radius: 50%;
+            cursor: pointer;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #34495e;
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: #3498db;
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        /* MODE INDICATOR */
+        #mode-indicator {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(231, 76, 60, 0.9);
+            padding: 10px 15px;
+            border-radius: 8px;
+            color: white;
+            font-size: 12px;
+            font-weight: bold;
+            backdrop-filter: blur(10px);
+            border: 2px solid #c0392b;
+            display: none;
+        }
+
+        /* PROJETOS PRONTOS */
+        .project-option {
+            background: rgba(52, 152, 219, 0.2);
+            padding: 12px;
+            border-radius: 8px;
+            margin: 8px 0;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(52, 152, 219, 0.3);
+        }
+
+        .project-option:hover {
+            background: rgba(52, 152, 219, 0.4);
+            transform: translateX(5px);
+        }
+
+        .project-title {
+            font-weight: bold;
+            color: #3498db;
+            margin-bottom: 5px;
+        }
+
+        .project-desc {
+            font-size: 11px;
+            color: #bdc3c7;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <!-- SIDEBAR - Interface Profissional -->
+        <div id="sidebar">
+            <div class="logo">
+                <h1>🏭 3D WAREHOUSE PRO</h1>
+                <p>Sistema Avançado de Gestão de Estoque 3D</p>
+            </div>
+
+            <!-- FERRAMENTAS PRINCIPAIS -->
+            <div class="section">
+                <h3>🛠️ Ferramentas</h3>
+                <button class="tool-button" onclick="ativarModo('selecao')" id="btnSelecao">
+                    <i>🔍</i> Selecionar
+                </button>
+                <button class="tool-button" onclick="ativarModo('movimento')" id="btnMovimento">
+                    <i>↔️</i> Mover
+                </button>
+                <button class="tool-button" onclick="ativarModo('rotacao')" id="btnRotacao">
+                    <i>🔄</i> Rotacionar
+                </button>
+                <button class="tool-button" onclick="ativarModo('escala')" id="btnEscala">
+                    <i>📐</i> Escalar
+                </button>
+            </div>
+
+            <!-- PROJETOS PRONTOS -->
+            <div class="section">
+                <h3>📁 Projetos Prontos</h3>
+                <div class="project-option" onclick="carregarProjeto('organizado')">
+                    <div class="project-title">🏗️ Estoque Organizado</div>
+                    <div class="project-desc">Produtos alinhados e contados</div>
+                </div>
+                <div class="project-option" onclick="carregarProjeto('aleatorio')">
+                    <div class="project-title">🎲 Estoque Aleatório</div>
+                    <div class="project-desc">Distribuição natural</div>
+                </div>
+                <div class="project-option" onclick="carregarProjeto('maximo')">
+                    <div class="project-title">📈 Estoque Máximo</div>
+                    <div class="project-desc">Capacidade total utilizada</div>
+                </div>
+            </div>
+
+            <!-- COMPONENTES -->
+            <div class="section">
+                <h3>📦 Componentes</h3>
+                <button class="tool-button" onclick="adicionarPrateleira()">
+                    <i>📚</i> Prateleira
+                </button>
+                <button class="tool-button" onclick="adicionarCaixa()">
+                    <i>📦</i> Caixa
+                </button>
+                <button class="tool-button" onclick="adicionarEmpilhadeira()">
+                    <i>🚜</i> Empilhadeira
+                </button>
+                <button class="tool-button" onclick="adicionarPalete()">
+                    <i>🎯</i> Palete
+                </button>
+            </div>
+
+            <!-- MATERIAIS -->
+            <div class="section">
+                <h3>🎨 Materiais</h3>
+                <div class="material-preview" id="materialPreview"></div>
+                <div class="color-palette">
+                    <div class="color-swatch" style="background: #e74c3c" onclick="mudarMaterial(0xe74c3c)"></div>
+                    <div class="color-swatch" style="background: #3498db" onclick="mudarMaterial(0x3498db)"></div>
+                    <div class="color-swatch" style="background: #2ecc71" onclick="mudarMaterial(0x2ecc71)"></div>
+                    <div class="color-swatch" style="background: #f1c40f" onclick="mudarMaterial(0xf1c40f)"></div>
+                    <div class="color-swatch" style="background: #9b59b6" onclick="mudarMaterial(0x9b59b6)"></div>
+                    <div class="color-swatch" style="background: #1abc9c" onclick="mudarMaterial(0x1abc9c)"></div>
+                    <div class="color-swatch" style="background: #34495e" onclick="mudarMaterial(0x34495e)"></div>
+                    <div class="color-swatch" style="background: #e67e22" onclick="mudarMaterial(0xe67e22)"></div>
+                </div>
+            </div>
+
+            <!-- ESTATÍSTICAS -->
+            <div class="section">
+                <h3>📊 Estatísticas</h3>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-value" id="statCaixas">0</div>
+                        <div class="stat-label">Caixas</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statPrateleiras">24</div>
+                        <div class="stat-label">Prateleiras</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value">4</div>
+                        <div class="stat-label">Empilhadeiras</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-value" id="statPaletes">0</div>
+                        <div class="stat-label">Paletes</div>
+                    </div>
+                </div>
+                <div class="property-group">
+                    <label class="property-label">Produtos Organizados</label>
+                    <div class="stat-value" id="statOrganizados">0%</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEWPORT PRINCIPAL -->
+        <div id="viewport">
+            <div id="canvas-container"></div>
+            
+            <!-- INDICADOR DE MODO -->
+            <div id="mode-indicator">Modo: Seleção</div>
+            
+            <!-- TOOLBAR SUPERIOR -->
+            <div id="top-toolbar">
+                <button class="top-tool-button" onclick="organizarEstoque()">
+                    <i>🧹</i> Organizar Tudo
+                </button>
+                <button class="top-tool-button" onclick="limparEstoque()">
+                    <i>🗑️</i> Limpar Estoque
+                </button>
+                <button class="top-tool-button" onclick="alternarVisao()">
+                    <i>📡</i> Visão Aérea
+                </button>
+                <button class="top-tool-button" onclick="exportarRelatorio()">
+                    <i>📊</i> Exportar Relatório
+                </button>
+            </div>
+
+            <!-- PAINEL DE INFORMAÇÕES -->
+            <div id="info-panel">
+                <h3>Informações da Entidade</h3>
+                <div class="coordinate-display">
+                    <div class="coord">
+                        <div>X</div>
+                        <div class="coord-value" id="coordX">0.00</div>
+                    </div>
+                    <div class="coord">
+                        <div>Y</div>
+                        <div class="coord-value" id="coordY">0.00</div>
+                    </div>
+                    <div class="coord">
+                        <div>Z</div>
+                        <div class="coord-value" id="coordZ">0.00</div>
+                    </div>
+                </div>
+                <div class="property-group">
+                    <label class="property-label">Entidade Selecionada</label>
+                    <input type="text" class="property-input" id="entidadeSelecionada" value="Nenhuma" readonly>
+                </div>
+                <div class="property-group">
+                    <label class="property-label">Tipo</label>
+                    <input type="text" class="property-input" id="tipoEntidade" value="-" readonly>
+                </div>
+            </div>
+        </div>
+
+        <!-- LOADING SCREEN -->
+        <div id="loading">
+            <div class="loader"></div>
+            <h2>3D WAREHOUSE PRO</h2>
+            <p>Carregando ambiente profissional...</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    
+    <script>
+        // Variáveis globais
+        let scene, camera, renderer, controls, raycaster, mouse;
+        let objetos = [];
+        let caixas = [];
+        let objetoSelecionado = null;
+        let modoAtual = 'selecao';
+        let isDragging = false;
+        let stats = {
+            caixas: 0,
+            prateleiras: 24,
+            paletes: 0,
+            organizados: 0
+        };
+
+        function init() {
+            // Cena
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB);
+
+            // Câmera
+            camera = new THREE.PerspectiveCamera(75, (window.innerWidth - 300) / window.innerHeight, 0.1, 1000);
+            camera.position.set(25, 15, 25);
+
+            // Renderer
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth - 300, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+
+            // Controles
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+
+            // Raycaster para seleção
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            // Iluminação
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.6);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(50, 50, 25);
+            directionalLight.castShadow = true;
+            scene.add(directionalLight);
+
+            // Criar ambiente inicial
+            criarGalpao();
+            criarPrateleiras();
+            criarEmpilhadeiras();
+            carregarProjeto('aleatorio');
+
+            // Event listeners
+            window.addEventListener('resize', onWindowResize);
+            renderer.domElement.addEventListener('mousedown', onMouseDown);
+            renderer.domElement.addEventListener('mousemove', onMouseMove);
+            renderer.domElement.addEventListener('mouseup', onMouseUp);
+            renderer.domElement.addEventListener('click', onCanvasClick);
+
+            // Iniciar animação
+            document.getElementById('loading').style.display = 'none';
+            ativarModo('selecao');
+            animate();
+            atualizarEstatisticas();
+        }
+
+        function ativarModo(modo) {
+            modoAtual = modo;
+            
+            // Atualizar botões
+            document.querySelectorAll('.tool-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn${modo.charAt(0).toUpperCase() + modo.slice(1)}`).classList.add('active');
+            
+            // Atualizar indicador
+            const indicator = document.getElementById('mode-indicator');
+            indicator.style.display = 'block';
+            indicator.textContent = `Modo: ${modo.charAt(0).toUpperCase() + modo.slice(1)}`;
+            indicator.style.background = modo === 'selecao' ? 
+                'rgba(52, 152, 219, 0.9)' : 'rgba(231, 76, 60, 0.9)';
+            
+            // Configurar controles
+            controls.enabled = modo === 'selecao';
+        }
+
+        function onMouseDown(event) {
+            if (modoAtual !== 'selecao' && objetoSelecionado) {
+                isDragging = true;
+                updateMousePosition(event);
+            }
+        }
+
+        function onMouseMove(event) {
+            updateMousePosition(event);
+            
+            if (isDragging && objetoSelecionado) {
+                if (modoAtual === 'movimento') {
+                    // Mover objeto
+                    raycaster.setFromCamera(mouse, camera);
+                    const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+                    const intersection = new THREE.Vector3();
+                    raycaster.ray.intersectPlane(plane, intersection);
+                    
+                    objetoSelecionado.position.x = intersection.x;
+                    objetoSelecionado.position.z = intersection.z;
+                    atualizarPainelInformacoes();
+                    
+                } else if (modoAtual === 'rotacao') {
+                    // Rotacionar objeto
+                    objetoSelecionado.rotation.y += event.movementX * 0.01;
+                    
+                } else if (modoAtual === 'escala') {
+                    // Escalar objeto
+                    const scale = 1 + event.movementY * 0.01;
+                    objetoSelecionado.scale.multiplyScalar(scale);
+                    objetoSelecionado.scale.clampScalar(0.1, 5);
+                }
+            }
+        }
+
+        function onMouseUp() {
+            isDragging = false;
+        }
+
+        function onCanvasClick(event) {
+            if (modoAtual !== 'selecao') return;
+            
+            updateMousePosition(event);
+            raycaster.setFromCamera(mouse, camera);
+            
+            const intersects = raycaster.intersectObjects([...caixas, ...objetos.filter(obj => obj.userData.tipo === 'prateleira' || obj.userData.tipo === 'empilhadeira' || obj.userData.tipo === 'palete')]);
+            
+            if (intersects.length > 0) {
+                // Desselecionar objeto anterior
+                if (objetoSelecionado) {
+                    objetoSelecionado.material.emissive.setHex(0x000000);
+                }
+                
+                // Selecionar novo objeto
+                objetoSelecionado = intersects[0].object;
+                objetoSelecionado.material.emissive.setHex(0x333333);
+                
+                atualizarPainelInformacoes();
+            } else {
+                // Desselecionar se clicar em lugar vazio
+                if (objetoSelecionado) {
+                    objetoSelecionado.material.emissive.setHex(0x000000);
+                    objetoSelecionado = null;
+                    atualizarPainelInformacoes();
+                }
+            }
+        }
+
+        function updateMousePosition(event) {
+            const rect = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        }
+
+        function atualizarPainelInformacoes() {
+            if (objetoSelecionado) {
+                document.getElementById('entidadeSelecionada').value = objetoSelecionado.userData.tipo || 'Objeto';
+                document.getElementById('tipoEntidade').value = objetoSelecionado.userData.descricao || '3D Model';
+                document.getElementById('coordX').textContent = objetoSelecionado.position.x.toFixed(2);
+                document.getElementById('coordY').textContent = objetoSelecionado.position.y.toFixed(2);
+                document.getElementById('coordZ').textContent = objetoSelecionado.position.z.toFixed(2);
+            } else {
+                document.getElementById('entidadeSelecionada').value = "Nenhuma";
+                document.getElementById('tipoEntidade').value = "-";
+                document.getElementById('coordX').textContent = "0.00";
+                document.getElementById('coordY').textContent = "0.00";
+                document.getElementById('coordZ').textContent = "0.00";
+            }
+        }
+
+        function criarGalpao() {
+            // Chão
+            const chaoGeometry = new THREE.PlaneGeometry(100, 80);
+            const chaoMaterial = new THREE.MeshLambertMaterial({ color: 0x666666 });
+            const chao = new THREE.Mesh(chaoGeometry, chaoMaterial);
+            chao.rotation.x = -Math.PI / 2;
+            chao.receiveShadow = true;
+            scene.add(chao);
+        }
+
+        function criarPrateleiras() {
+            const material = new THREE.MeshLambertMaterial({ color: 0x4a5568 });
+            
+            for(let lado = -1; lado <= 1; lado += 2) {
+                for(let fileira = 0; fileira < 4; fileira++) {
+                    const xBase = lado * 22;
+                    const zBase = -30 + fileira * 16;
+                    
+                    for(let altura = 0; altura < 5; altura++) {
+                        const geometry = new THREE.BoxGeometry(18, 0.4, 4);
+                        const prateleira = new THREE.Mesh(geometry, material);
+                        prateleira.position.set(xBase, 1.2 + altura * 3, zBase);
+                        prateleira.castShadow = true;
+                        prateleira.receiveShadow = true;
+                        prateleira.userData = { tipo: 'prateleira', descricao: 'Prateleira Industrial' };
+                        scene.add(prateleira);
+                        objetos.push(prateleira);
+                    }
+                }
+            }
+        }
+
+        function criarEmpilhadeiras() {
+            const posicoes = [
+                { x: 15, z: -10, rot: Math.PI / 2 },
+                { x: -15, z: 20, rot: -Math.PI / 2 },
+                { x: 25, z: 25, rot: Math.PI },
+                { x: -25, z: -15, rot: 0 }
+            ];
+
+            posicoes.forEach(pos => {
+                const empilhadeira = criarEmpilhadeira();
+                empilhadeira.position.set(pos.x, 0, pos.z);
+                empilhadeira.rotation.y = pos.rot;
+                empilhadeira.userData = { tipo: 'empilhadeira', descricao: 'Empilhadeira Industrial' };
+                scene.add(empilhadeira);
+                objetos.push(empilhadeira);
+            });
+        }
+
+        function criarEmpilhadeira() {
+            const grupo = new THREE.Group();
+
+            const corpoGeometry = new THREE.BoxGeometry(3, 1.5, 2);
+            const corpoMaterial = new THREE.MeshLambertMaterial({ color: 0xffaa00 });
+            const corpo = new THREE.Mesh(corpoGeometry, corpoMaterial);
+            corpo.position.y = 1;
+            corpo.castShadow = true;
+            grupo.add(corpo);
+
+            const cabineGeometry = new THREE.BoxGeometry(1.5, 1.2, 1.8);
+            const cabineMaterial = new THREE.MeshLambertMaterial({ color: 0x333333 });
+            const cabine = new THREE.Mesh(cabineGeometry, cabineMaterial);
+            cabine.position.set(0, 1.8, 0.2);
+            cabine.castShadow = true;
+            grupo.add(cabine);
+
+            return grupo;
+        }
+
+        // SISTEMA DE PROJETOS PRONTOS
+        function carregarProjeto(tipo) {
+            // Limpar caixas existentes
+            caixas.forEach(caixa => scene.remove(caixa));
+            caixas = [];
+            stats.caixas = 0;
+            stats.organizados = 0;
+
+            if (tipo === 'organizado') {
+                criarEstoqueOrganizado();
+            } else if (tipo === 'aleatorio') {
+                criarEstoqueAleatorio();
+            } else if (tipo === 'maximo') {
+                criarEstoqueMaximo();
+            }
+
+            atualizarEstatisticas();
+        }
+
+        function criarEstoqueOrganizado() {
+            const tiposCaixas = [
+                { cor: 0xe74c3c, tamanho: [1.8, 1.2, 1.2], nome: "Pequena" },
+                { cor: 0x3498db, tamanho: [2.2, 1.5, 1.5], nome: "Média" },
+                { cor: 0x2ecc71, tamanho: [2.5, 1.8, 1.8], nome: "Grande" }
+            ];
+
+            let caixaCount = 0;
+            
+            for(let lado = -1; lado <= 1; lado += 2) {
+                for(let fileira = 0; fileira < 4; fileira++) {
+                    for(let altura = 0; altura < 5; altura++) {
+                        const tipo = tiposCaixas[caixaCount % 3];
+                        for(let i = 0; i < 3; i++) {
+                            const geometry = new THREE.BoxGeometry(...tipo.tamanho);
+                            const material = new THREE.MeshLambertMaterial({ color: tipo.cor });
+                            const caixa = new THREE.Mesh(geometry, material);
+                            
+                            const xBase = lado * 22;
+                            const zBase = -30 + fileira * 16;
+                            
+                            caixa.position.set(
+                                xBase - 6 + i * 6,
+                                1.2 + altura * 3 + tipo.tamanho[1]/2,
+                                zBase
+                            );
+                            
+                            caixa.castShadow = true;
+                            caixa.receiveShadow = true;
+                            caixa.userData = { tipo: 'caixa', descricao: `Caixa ${tipo.nome}` };
+                            scene.add(caixa);
+                            caixas.push(caixa);
+                            stats.caixas++;
+                            stats.organizados++;
+                        }
+                        caixaCount++;
+                    }
+                }
+            }
+        }
+
+        function criarEstoqueAleatorio() {
+            for(let i = 0; i < 50; i++) {
+                adicionarCaixa();
+            }
+        }
+
+        function criarEstoqueMaximo() {
+            const tiposCaixas = [
+                { cor: 0xe74c3c, tamanho: [1.8, 1.2, 1.2] },
+                { cor: 0x3498db, tamanho: [2.0, 1.4, 1.4] },
+                { cor: 0x2ecc71, tamanho: [1.6, 1.0, 1.0] }
+            ];
+
+            for(let lado = -1; lado <= 1; lado += 2) {
+                for(let fileira = 0; fileira < 4; fileira++) {
+                    for(let altura = 0; altura < 5; altura++) {
+                        for(let i = 0; i < 4; i++) {
+                            const tipo = tiposCaixas[Math.floor(Math.random() * 3)];
+                            const geometry = new THREE.BoxGeometry(...tipo.tamanho);
+                            const material = new THREE.MeshLambertMaterial({ color: tipo.cor });
+                            const caixa = new THREE.Mesh(geometry, material);
+                            
+                            const xBase = lado * 22;
+                            const zBase = -30 + fileira * 16;
+                            
+                            caixa.position.set(
+                                xBase - 7 + i * 4.5,
+                                1.2 + altura * 3 + tipo.tamanho[1]/2,
+                                zBase + (Math.random() - 0.5) * 1
+                            );
+                            
+                            caixa.castShadow = true;
+                            caixa.receiveShadow = true;
+                            caixa.userData = { tipo: 'caixa', descricao: 'Caixa' };
+                            scene.add(caixa);
+                            caixas.push(caixa);
+                            stats.caixas++;
+                            stats.organizados++;
+                        }
+                    }
+                }
+            }
+        }
+
+        function organizarEstoque() {
+            carregarProjeto('organizado');
+        }
+
+        function limparEstoque() {
+            caixas.forEach(caixa => scene.remove(caixa));
+            caixas = [];
+            stats.caixas = 0;
+            stats.organizados = 0;
+            atualizarEstatisticas();
+        }
+
+        // FUNÇÕES DA INTERFACE
+        function adicionarCaixa() {
+            const geometry = new THREE.BoxGeometry(2, 1.5, 1.2);
+            const material = new THREE.MeshLambertMaterial({ 
+                color: 0xe74c3c,
+                roughness: 0.7,
+                metalness: 0.1
+            });
+            const caixa = new THREE.Mesh(geometry, material);
+            
+            caixa.position.set(
+                (Math.random() - 0.5) * 40,
+                1,
+                (Math.random() - 0.5) * 30
+            );
+            
+            caixa.castShadow = true;
+            caixa.receiveShadow = true;
+            caixa.userData = { tipo: 'caixa', descricao: 'Caixa' };
+            scene.add(caixa);
+            caixas.push(caixa);
+            
+            stats.caixas++;
+            atualizarEstatisticas();
+        }
+
+        function adicionarPrateleira() {
+            const geometry = new THREE.BoxGeometry(18, 0.4, 4);
+            const material = new THREE.MeshLambertMaterial({ color: 0x4a5568 });
+            const prateleira = new THREE.Mesh(geometry, material);
+            
+            prateleira.position.set(0, 5, 0);
+            prateleira.castShadow = true;
+            prateleira.receiveShadow = true;
+            prateleira.userData = { tipo: 'prateleira', descricao: 'Prateleira' };
+            scene.add(prateleira);
+            objetos.push(prateleira);
+            
+            stats.prateleiras++;
+            atualizarEstatisticas();
+        }
+
+        function adicionarEmpilhadeira() {
+            const empilhadeira = criarEmpilhadeira();
+            empilhadeira.position.set(0, 0, 0);
+            empilhadeira.userData = { tipo: 'empilhadeira', descricao: 'Empilhadeira' };
+            scene.add(empilhadeira);
+            objetos.push(empilhadeira);
+        }
+
+        function adicionarPalete() {
+            const geometry = new THREE.BoxGeometry(4, 0.3, 4);
+            const material = new THREE.MeshLambertMaterial({ color: 0x8B4513 });
+            const palete = new THREE.Mesh(geometry, material);
+            
+            palete.position.set(
+                (Math.random() - 0.5) * 40,
+                0.3,
+                (Math.random() - 0.5) * 30
+            );
+            
+            palete.receiveShadow = true;
+            palete.userData = { tipo: 'palete', descricao: 'Palete' };
+            scene.add(palete);
+            objetos.push(palete);
+            
+            stats.paletes++;
+            atualizarEstatisticas();
+        }
+
+        function mudarMaterial(cor) {
+            if (objetoSelecionado) {
+                objetoSelecionado.material.color.setHex(cor);
+            }
+            document.getElementById('materialPreview').style.background = `#${cor.toString(16)}`;
+        }
+
+        function alternarVisao() {
+            camera.position.set(0, 50, 0);
+            camera.lookAt(0, 0, 0);
+        }
+
+        function exportarRelatorio() {
+            const relatorio = `
+RELATÓRIO DO ESTOQUE - 3D WAREHOUSE PRO
+
+📦 Caixas: ${stats.caixas}
+📚 Prateleiras: ${stats.prateleiras}
+🚜 Empilhadeiras: 4
+🎯 Paletes: ${stats.paletes}
+✅ Organização: ${stats.organizados}/${stats.caixas} (${Math.round((stats.organizados/stats.caixas)*100)}%)
+
+Gerado em: ${new Date().toLocaleString()}
+            `;
+            
+            alert('Relatório gerado!\n\n' + relatorio);
+        }
+
+        function atualizarEstatisticas() {
+            document.getElementById('statCaixas').textContent = stats.caixas;
+            document.getElementById('statPrateleiras').textContent = stats.prateleiras;
+            document.getElementById('statPaletes').textContent = stats.paletes;
+            
+            const percentual = stats.caixas > 0 ? Math.round((stats.organizados/stats.caixas)*100) : 0;
+            document.getElementById('statOrganizados').textContent = `${percentual}%`;
+        }
+
+        function onWindowResize() {
+            camera.aspect = (window.innerWidth - 300) / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth - 300, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        // Inicializar
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
